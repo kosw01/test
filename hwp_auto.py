@@ -90,7 +90,7 @@ for i in range(len(input)-1):
         hwp.PutFieldText(field.iloc[i+1,j+1],input.iloc[i+1,j+1])
 
 # 교량별 센서 현황을 점검 내용에 작성하기(교량 수량만큼 루프돌기)
-for i in range(교량수):
+for i in range(2):
     filtered_info = info[info['no.'] == i+1]
     channel_names = filtered_info['channel_name'].tolist()
     br_name = filtered_info['br_name'].iloc[0]
