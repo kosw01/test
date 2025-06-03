@@ -32,38 +32,38 @@ def move_to_next_row(hwp, count=8):
     for _ in range(count):
         hwp.HAction.Run("TableRightCell")
 
-def insert_rate_operate(hwp):
-    hwp.MoveToField(f'가동율{{{{{i+1}}}}}',True,False,False)
+def insert_rate_operate(hwp, br_name):
+    hwp.MoveToField(f'가동율',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_주별가동율.png'), Embedded=False, sizeoption=2)    
-def insert_daq_pic1(hwp):
-    hwp.MoveToField(f'운영프로그램점검1{{{{{i+1}}}}}',True,False,False)
+def insert_daq_pic1(hwp, br_name):
+    hwp.MoveToField(f'운영프로그램점검1',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_daq_pic2(hwp):
-    hwp.MoveToField(f'운영프로그램점검2{{{{{i+1}}}}}',True,False,False)
+def insert_daq_pic2(hwp, br_name):
+    hwp.MoveToField(f'운영프로그램점검2',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_v3_pic(hwp):
-    hwp.MoveToField(f'백신점검{{{{{i+1}}}}}',True,False,False)
+def insert_v3_pic(hwp, br_name):
+    hwp.MoveToField(f'백신점검',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_eqk_pic(hwp):
-    hwp.MoveToField(f'지진데이터{{{{{i+1}}}}}',True,False,False)
+def insert_eqk_pic(hwp, br_name):
+    hwp.MoveToField(f'지진데이터',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)
-def insert_res_speed_pic(hwp):
-    hwp.MoveToField(f'시스템응담속도{{{{{i+1}}}}}',True,False,False)
+def insert_res_speed_pic(hwp, br_name):
+    hwp.MoveToField(f'시스템응담속도',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_vol_afford_pic(hwp):
-    hwp.MoveToField(f'자원사용율{{{{{i+1}}}}}',True,False,False)
+def insert_vol_afford_pic(hwp, br_name):
+    hwp.MoveToField(f'자원사용율',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
@@ -106,7 +106,7 @@ else:
     print(f"엑셀 요약 보고서가 존재하지 않습니다: {excel_file}")
     continue
 
-insert_rate_operate(hwp)
+insert_rate_operate(hwp, br_name)
 i = 0
 # 테이블 생성 지정된 캐럿으로 이동 표의 첫번째
 print(f'carrot{{{{{i}}}}}')
@@ -166,9 +166,9 @@ for j in range(len(channel_names)):
     except:
         print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
 
-insert_daq_pic1(hwp)
-insert_daq_pic1(hwp)
-insert_v3_pic(hwp)
-insert_eqk_pic(hwp)
-insert_res_speed_pic(hwp)
-insert_vol_afford_pic(hwp)
+insert_daq_pic1(hwp, br_name)
+insert_daq_pic1(hwp, br_name)
+insert_v3_pic(hwp, br_name)
+insert_eqk_pic(hwp, br_name)
+insert_res_speed_pic(hwp, br_name)
+insert_vol_afford_pic(hwp, br_name)
