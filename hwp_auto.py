@@ -32,38 +32,38 @@ def move_to_next_row(hwp, count=8):
     for _ in range(count):
         hwp.HAction.Run("TableRightCell")
 
-def insert_rate_operate(hwp):
+def insert_rate_operate(hwp, br_name):
     hwp.MoveToField(f'가동율{{{{{i+1}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_주별가동율.png'), Embedded=False, sizeoption=2)    
-def insert_daq_pic1(hwp):
-    hwp.MoveToField(f'운영프로그램점검1{{{{{i+1}}}}}',True,False,False)
+def insert_daq_pic1(hwp, br_name):
+    hwp.MoveToField(f'운영프로그램점검1{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_daq_pic2(hwp):
-    hwp.MoveToField(f'운영프로그램점검2{{{{{i+1}}}}}',True,False,False)
+def insert_daq_pic2(hwp, br_name):
+    hwp.MoveToField(f'운영프로그램점검2{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_v3_pic(hwp):
-    hwp.MoveToField(f'백신점검{{{{{i+1}}}}}',True,False,False)
+def insert_v3_pic(hwp, br_name):
+    hwp.MoveToField(f'백신점검{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_eqk_pic(hwp):
-    hwp.MoveToField(f'지진데이터{{{{{i+1}}}}}',True,False,False)
+def insert_eqk_pic(hwp, br_name):
+    hwp.MoveToField(f'지진데이터{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)
-def insert_res_speed_pic(hwp):
-    hwp.MoveToField(f'시스템응담속도{{{{{i+1}}}}}',True,False,False)
+def insert_res_speed_pic(hwp, br_name):
+    hwp.MoveToField(f'시스템응담속도{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
-def insert_vol_afford_pic(hwp):
-    hwp.MoveToField(f'자원사용율{{{{{i+1}}}}}',True,False,False)
+def insert_vol_afford_pic(hwp, br_name):
+    hwp.MoveToField(f'자원사용율{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_#파일명작성하기.png'), Embedded=False, sizeoption=2)  
@@ -90,7 +90,7 @@ for i in range(len(input)-1):
         hwp.PutFieldText(field.iloc[i+1,j+1],input.iloc[i+1,j+1])
 
 # 교량별 센서 현황을 점검 내용에 작성하기(교량 수량만큼 루프돌기)
-for i in range(2):
+for i in range(교량수):
     filtered_info = info[info['no.'] == i+1]
     channel_names = filtered_info['channel_name'].tolist()
     br_name = filtered_info['br_name'].iloc[0]
@@ -107,69 +107,69 @@ for i in range(2):
         print(f"엑셀 요약 보고서가 존재하지 않습니다: {excel_file}")
         continue
 
-    insert_rate_operate(hwp)
+    insert_rate_operate(hwp, br_name)
 
-    # # 테이블 생성 (지정한 캐럿으로 이동해서 행추가를 (교량개수-1)회 수행
-    # print(f'carrot{{{{{i}}}}}')
-    # for j in range(len(channel_names)-1):
-    #     hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
-    #     hwp.HAction.Run("TableCellBlock")
-    #     hwp.HAction.Run("TableAppendRow")
+    # 테이블 생성 (지정한 캐럿으로 이동해서 행추가를 (교량개수-1)회 수행
+    print(f'carrot{{{{{i}}}}}')
+    for j in range(len(channel_names)-1):
+        hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
+        hwp.HAction.Run("TableCellBlock")
+        hwp.HAction.Run("TableAppendRow")
 
-    # # 채널구분 및 채널명 작성
-    # hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
-    # for j in range(len(channel_names)):
-    #     channel_type = filtered_info['센서종류'].iloc[j]
-    #     insert_text(channel_type)
-    #     hwp.HAction.Run("TableRightCell")
-    #     insert_text(j+1)
-    #     hwp.HAction.Run("TableRightCell")
-    #     insert_text(channel_names[j])
-    #     hwp.HAction.Run("TableRightCell")
-    #     hwp.HAction.Run("TableRightCell")
-    #     hwp.HAction.Run("TableRightCell")
-    #     hwp.HAction.Run("TableRightCell")
-    #     hwp.HAction.Run("TableRightCell")
-    #     hwp.HAction.Run("TableRightCell")
+    # 채널구분 및 채널명 작성
+    hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
+    for j in range(len(channel_names)):
+        channel_type = filtered_info['센서종류'].iloc[j]
+        insert_text(channel_type)
+        hwp.HAction.Run("TableRightCell")
+        insert_text(j+1)
+        hwp.HAction.Run("TableRightCell")
+        insert_text(channel_names[j])
+        hwp.HAction.Run("TableRightCell")
+        hwp.HAction.Run("TableRightCell")
+        hwp.HAction.Run("TableRightCell")
+        hwp.HAction.Run("TableRightCell")
+        hwp.HAction.Run("TableRightCell")
+        hwp.HAction.Run("TableRightCell")
 
-    # # 데이터 수신율 확인
-    # move_to_start_position(hwp, i)
-    # for j in range(len(channel_names)):
-    #     reception_rate = float(bridge_report['Unnamed: 3'].iloc[j+1])
-    #     if reception_rate <= 20:
-    #         insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
-    #         move_to_next_row(hwp, 2)
-    #         insert_text('O')
-    #         print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-    #         move_to_next_row(hwp, 6)   
-    #     elif reception_rate <= 50:
-    #         insert_text('일부구간 결측')
-    #         move_to_next_row(hwp, 1)
-    #         insert_text('O')
-    #         print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-    #         move_to_next_row(hwp, 7)    
-    #     elif reception_rate <= 80:
-    #         insert_text('일부구간 결측')
-    #         move_to_next_row(hwp, 3)
-    #         insert_text('O')
-    #         print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-    #         move_to_next_row(hwp, 5)  
-    #     else:
-    #         move_to_next_row(hwp)
+    # 데이터 수신율 확인
+    move_to_start_position(hwp, i)
+    for j in range(len(channel_names)):
+        reception_rate = float(bridge_report['Unnamed: 3'].iloc[j+1])
+        if reception_rate <= 20:
+            insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
+            move_to_next_row(hwp, 2)
+            insert_text('O')
+            print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
+            move_to_next_row(hwp, 6)   
+        elif reception_rate <= 50:
+            insert_text('일부구간 결측')
+            move_to_next_row(hwp, 1)
+            insert_text('O')
+            print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
+            move_to_next_row(hwp, 7)    
+        elif reception_rate <= 80:
+            insert_text('일부구간 결측')
+            move_to_next_row(hwp, 3)
+            insert_text('O')
+            print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
+            move_to_next_row(hwp, 5)  
+        else:
+            move_to_next_row(hwp)
 
-    # # 관리기준 초과 확인
-    # move_to_start_position(hwp, i)
-    # for j in range(len(channel_names)):
-    #     try:
-    #         if limit_report['Unnamed: 5'].iloc[j+1] == '초과':
-    #             insert_text('관리기준 초과\r\n')
-    #         move_to_next_row(hwp)
-    #     except:
-    #         print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
+    # 관리기준 초과 확인
+    move_to_start_position(hwp, i)
+    for j in range(len(channel_names)):
+        try:
+            if limit_report['Unnamed: 5'].iloc[j+1] == '초과':
+                insert_text('관리기준 초과\r\n')
+            move_to_next_row(hwp)
+        except:
+            print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
     
-    # insert_daq_pic1(hwp)
-    # insert_daq_pic1(hwp)
-    # insert_v3_pic(hwp)
-    # insert_eqk_pic(hwp)
-    # insert_res_speed_pic(hwp)
-    # insert_vol_afford_pic(hwp)
+    insert_daq_pic1(hwp, br_name)
+    insert_daq_pic1(hwp, br_name)
+    insert_v3_pic(hwp, br_name)
+    insert_eqk_pic(hwp, br_name)
+    insert_res_speed_pic(hwp, br_name)
+    insert_vol_afford_pic(hwp, br_name)
