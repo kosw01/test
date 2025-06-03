@@ -89,7 +89,7 @@ for i in range(len(input)-1):
     for j in range(len(input.columns)-1):
         hwp.PutFieldText(field.iloc[i+1,j+1],input.iloc[i+1,j+1])
 
-n = # 보고서 작성할 교량 번호
+n = 1 # 보고서 작성할 교량 번호
 filtered_info = info[info['no.'] == n]
 channel_names = filtered_info['channel_name'].tolist()
 br_name = filtered_info['br_name'].iloc[0]
