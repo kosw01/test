@@ -104,7 +104,7 @@ if os.path.exists(excel_file):
     limit_report = excel_data['limit']       # 관리기준 초과 시트 사용
 else:
     print(f"엑셀 요약 보고서가 존재하지 않습니다: {excel_file}")
-    continue
+    pass
 
 insert_rate_operate(hwp, br_name)
 i = 0
