@@ -115,6 +115,13 @@ for j in range(len(channel_names)-1):
     hwp.HAction.Run("TableCellBlock")
     hwp.HAction.Run("TableAppendRow")
 
+# 그래프를 위한 테이블 생성; 지정된 캐럿(carrot2)으로 이동 표의 첫번째
+print(f'carrot2{{{{{i}}}}}')
+for j in range(len(channel_names)-1):
+    hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
+    hwp.HAction.Run("TableCellBlock")
+    hwp.HAction.Run("TableAppendRow")
+
 # 채널구분 및 채널명 작성
 hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
 for j in range(len(channel_names)):
@@ -166,9 +173,26 @@ for j in range(len(channel_names)):
     except:
         print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
 
+# 여기에다가 그림넣는 루프 작성할것.
+
+
 insert_daq_pic1(hwp, br_name)
 insert_daq_pic1(hwp, br_name)
 insert_v3_pic(hwp, br_name)
 insert_eqk_pic(hwp, br_name)
 insert_res_speed_pic(hwp, br_name)
 insert_vol_afford_pic(hwp, br_name)
+
+"""
+그래프를 넣는 표를 삽입할 예정(1x1)
+
+표머리도 없이 그래프 하나 넣어놓고, 첫번째 셀에 캐럿을 넣을 예정
+
+(채널 수-1)만큼 표길이 추가하고,
+
+별도의 꾸밈없이 그래프 추가예정
+
+한글문서 교량 폴더에 저장하고, pdf로도 저장하기
+
+hwp.Quit()
+"""
