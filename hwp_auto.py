@@ -36,37 +36,37 @@ def insert_rate_operate(hwp, br_name):
     hwp.MoveToField(f'가동율{{{{{i+1}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\{br_name}_주별가동율.png'), Embedded=False, sizeoption=2)    
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{br_name}_주별가동율.png'), Embedded=False, sizeoption=2)    
 def insert_daq_pic1(hwp, br_name):
     hwp.MoveToField(f'운영프로그램점검1{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\기타프로그램.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/기타프로그램.jpg'), Embedded=False, sizeoption=2)  
 def insert_daq_pic2(hwp, br_name):
     hwp.MoveToField(f'운영프로그램점검2{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\URMS.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/URMS.jpg'), Embedded=False, sizeoption=2)  
 def insert_v3_pic(hwp, br_name):
     hwp.MoveToField(f'백신점검{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\바이러스.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/바이러스.jpg'), Embedded=False, sizeoption=2)  
 def insert_eqk_pic(hwp, br_name):
     hwp.MoveToField(f'지진데이터{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\행정안전부.jpg'), Embedded=False, sizeoption=2)
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/행정안전부.jpg'), Embedded=False, sizeoption=2)
 def insert_res_speed_pic(hwp, br_name):
     hwp.MoveToField(f'시스템응담속도{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\작업관리자.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg'), Embedded=False, sizeoption=2)  
 def insert_vol_afford_pic(hwp, br_name):
     hwp.MoveToField(f'자원사용율{{{{{i}}}}}',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}\D속성.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/D속성.jpg'), Embedded=False, sizeoption=2)  
 
 
 
