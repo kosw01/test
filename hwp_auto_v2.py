@@ -61,13 +61,21 @@ def insert_res_speed_pic(hwp, br_name):
     hwp.MoveToField(f'시스템응담속도',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg'), Embedded=False, sizeoption=2)  
 def insert_vol_afford_pic(hwp, br_name):
     hwp.MoveToField(f'자원사용율',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/D속성.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/D속성.jpg'), Embedded=False, sizeoption=2)   
 
+# 그래프 그리는 테이블로 이동
+def move_to_startofgraph_position(hwp,i):
+    hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
+
+def insert_jth_graph(hwp, j):
+    hwp.Run("SelectAll")
+    hwp.Run("Delete")
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{channel_names[j+1]}.jpg'), Embedded=False, sizeoption=2)
 
 
 # 한글파일 열기
@@ -75,7 +83,7 @@ hwp = win32.gencache.EnsureDispatch("hwpframe.hwpobject")
 hwp.XHwpWindows.Item(0).Visible = True # 아래한글 첫번째 파일 보이게해줘
 
 # 파일경로 꼭 확인하기(절대경로로 작성)
-hwp.Open(r"C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)\월간모니터링보고서(5월).hwp")
+hwp.Open(r"C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)\월간모니터링보고서.hwp")
 
 # 참조테이블 불러오기
 field = pd.read_csv('02_hwp_ref/hwp_ref.csv', encoding='cp949')              # 월간모니터링 결과 총괄 필드명
@@ -174,6 +182,14 @@ for j in range(len(channel_names)):
         print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
 
 # 여기에다가 그림넣는 루프 작성할것.
+hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
+insert_jth_graph(hwp, 0)
+for j in range(len(channel_names)-1):
+    try:
+        insert_jth_graph(hwp, j)
+        hwp.HAction.Run("TableRightCell")
+    except:
+        print(f'{br_name} 채널명 {channel_names[j]}에서 그래프 삽입중 오류 발생')
 
 
 insert_daq_pic1(hwp, br_name)
@@ -182,6 +198,9 @@ insert_v3_pic(hwp, br_name)
 insert_eqk_pic(hwp, br_name)
 insert_res_speed_pic(hwp, br_name)
 insert_vol_afford_pic(hwp, br_name)
+
+hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/통계데이터(25년 01~04월)/{br_name}/{br_name}_월간모니터링보고서(5월).hwp')
+hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/통계데이터(25년 01~04월)/{br_name}/{br_name}_월간모니터링보고서(5월).pdf',1)
 
 """
 그래프를 넣는 표를 삽입할 예정(1x1)
