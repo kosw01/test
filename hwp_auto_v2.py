@@ -38,35 +38,35 @@ def insert_rate_operate(hwp, br_name):
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{br_name}_주별가동율.png'), Embedded=False, sizeoption=2)    
 def insert_daq_pic1(hwp, br_name):
-    hwp.MoveToField(f'운영프로그램점검1',True,False,False)
+    hwp.MoveToField(f'운영프로그램1',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/기타프로그램.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/기타프로그램.jpg'), Embedded=False, sizeoption=3)  
 def insert_daq_pic2(hwp, br_name):
-    hwp.MoveToField(f'운영프로그램점검2',True,False,False)
+    hwp.MoveToField(f'운영프로그램2',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/URMS.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/URMS.jpg'), Embedded=False, sizeoption=3)  
 def insert_v3_pic(hwp, br_name):
-    hwp.MoveToField(f'백신점검',True,False,False)
+    hwp.MoveToField(f'백신',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/바이러스.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/바이러스.jpg'), Embedded=False, sizeoption=3)  
 def insert_eqk_pic(hwp, br_name):
-    hwp.MoveToField(f'지진데이터',True,False,False)
+    hwp.MoveToField(f'지진점검',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/행정안전부.jpg'), Embedded=False, sizeoption=2)
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/행정안전부.jpg'), Embedded=False, sizeoption=3)
 def insert_res_speed_pic(hwp, br_name):
-    hwp.MoveToField(f'시스템응담속도',True,False,False)
+    hwp.MoveToField(f'응담속도',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg'), Embedded=False, sizeoption=2)  
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg'), Embedded=False, sizeoption=3)  
 def insert_vol_afford_pic(hwp, br_name):
     hwp.MoveToField(f'자원사용율',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/D속성.jpg'), Embedded=False, sizeoption=2)   
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/D속성.jpg'), Embedded=False, sizeoption=3)   
 
 # 그래프 그리는 테이블로 이동
 def move_to_startofgraph_position(hwp,i):
@@ -75,7 +75,7 @@ def move_to_startofgraph_position(hwp,i):
 def insert_jth_graph(hwp, j):
     hwp.Run("SelectAll")
     hwp.Run("Delete")
-    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{channel_names[j+1]}.jpg'), Embedded=False, sizeoption=2)
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{channel_names[j+1]}_월통계.png'), Embedded=False, sizeoption=2)
 
 
 # 한글파일 열기
@@ -83,24 +83,17 @@ hwp = win32.gencache.EnsureDispatch("hwpframe.hwpobject")
 hwp.XHwpWindows.Item(0).Visible = True # 아래한글 첫번째 파일 보이게해줘
 
 # 파일경로 꼭 확인하기(절대경로로 작성)
-hwp.Open(r"C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)\월간모니터링보고서.hwp")
+hwp.Open(r"C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)\월간모니터링보고서(개별교량).hwp")
 
 # 참조테이블 불러오기
-field = pd.read_csv('02_hwp_ref/hwp_ref.csv', encoding='cp949')              # 월간모니터링 결과 총괄 필드명
-input = pd.read_csv('02_hwp_ref/hwp_input.csv', encoding='cp949')            # 월간모니터링 결과 총괄 입력값
 info = pd.read_csv('01_channel_info/channel_info.csv', encoding='cp949')     # 채널정보
 pic_path = r'C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)'               # 가동율 그래프를 담고있는 폴더의 절대경로
-
-
-# 월간모니터링 결과 총괄 + 계측시설 성능지수 + 교량별 정상이상 수량 집계
-for i in range(len(input)-1):
-    for j in range(len(input.columns)-1):
-        hwp.PutFieldText(field.iloc[i+1,j+1],input.iloc[i+1,j+1])
 
 n = 1 # 보고서 작성할 교량 번호
 filtered_info = info[info['no.'] == n]
 channel_names = filtered_info['channel_name'].tolist()
 br_name = filtered_info['br_name'].iloc[0]
+hwp.PutFieldText('교량명', br_name)
 
 # 엑셀 파일 경로
 excel_file = f'{br_name}/{br_name}_요약보고서.xlsx'
@@ -129,6 +122,7 @@ for j in range(len(channel_names)-1):
     hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
     hwp.HAction.Run("TableCellBlock")
     hwp.HAction.Run("TableAppendRow")
+    print(f'{j}/{len(channel_names)}')
 
 # 채널구분 및 채널명 작성
 hwp.MoveToField(f'carrot{{{{{i}}}}}',True,False,False)
@@ -148,70 +142,80 @@ for j in range(len(channel_names)):
 
 # 데이터 수신율 확인
 move_to_start_position(hwp, i)
-for j in range(len(channel_names)):
-    reception_rate = float(bridge_report['Unnamed: 3'].iloc[j+1])
-    if reception_rate <= 20:
-        insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
-        move_to_next_row(hwp, 2)
-        insert_text('O')
-        print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-        move_to_next_row(hwp, 6)   
-    elif reception_rate <= 50:
-        insert_text('일부구간 결측')
-        move_to_next_row(hwp, 1)
-        insert_text('O')
-        print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-        move_to_next_row(hwp, 7)    
-    elif reception_rate <= 80:
-        insert_text('일부구간 결측')
-        move_to_next_row(hwp, 3)
-        insert_text('O')
-        print(f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%')
-        move_to_next_row(hwp, 5)  
-    else:
-        move_to_next_row(hwp)
+abnormal_count = 0
+with open(f'{br_name}/{br_name}_log.txt', 'w', encoding='utf-8') as f:
+    for j in range(len(channel_names)):
+        reception_rate = float(bridge_report['Unnamed: 3'].iloc[j+1])
+        if reception_rate <= 20:
+            insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
+            move_to_next_row(hwp, 2)
+            insert_text('O')
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+            print(log_msg)
+            f.write(log_msg + '\n')
+            move_to_next_row(hwp, 6)   
+            abnormal_count += 1
+        elif reception_rate <= 50:
+            insert_text('일부구간 결측')
+            move_to_next_row(hwp, 1)
+            insert_text('O')
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+            print(log_msg)
+            f.write(log_msg + '\n')
+            abnormal_count += 1
+            move_to_next_row(hwp, 7)    
+        elif reception_rate <= 80:
+            insert_text('일부구간 결측')
+            move_to_next_row(hwp, 3)
+            insert_text('O')
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+            print(log_msg)
+            f.write(log_msg + '\n')
+            move_to_next_row(hwp, 5)  
+        else:
+            move_to_next_row(hwp)
 
-# 관리기준 초과 확인
-move_to_start_position(hwp, i)
-for j in range(len(channel_names)):
-    try:
-        if limit_report['Unnamed: 5'].iloc[j+1] == '초과':
-            insert_text('관리기준 초과\r\n')
-        move_to_next_row(hwp)
-    except:
-        print(f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생')
+    # 관리기준 초과 확인
+    move_to_start_position(hwp, i)
+    for j in range(len(channel_names)):
+        try:
+            if limit_report['Unnamed: 5'].iloc[j+1] == '초과':
+                insert_text('관리기준 초과\r\n')
+            move_to_next_row(hwp)
+        except:
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 관리기준 초과 확인 중 오류 발생'
+            print(log_msg)
+            f.write(log_msg + '\n')
 
-# 여기에다가 그림넣는 루프 작성할것.
-hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
-insert_jth_graph(hwp, 0)
-for j in range(len(channel_names)-1):
-    try:
-        insert_jth_graph(hwp, j)
-        hwp.HAction.Run("TableRightCell")
-    except:
-        print(f'{br_name} 채널명 {channel_names[j]}에서 그래프 삽입중 오류 발생')
+    # 그림넣는 루프
+    hwp.MoveToField(f'carrot2{{{{{i}}}}}',True,False,False)
+    hwp.Run("SelectAll")
+    hwp.Run("Delete")
+    hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/{channel_names[0]}_월통계.png'), Embedded=False, sizeoption=2)
+    hwp.HAction.Run("TableRightCell")
+    for j in range(len(channel_names)-1):
+        try:
+            insert_jth_graph(hwp, j)
+            hwp.HAction.Run("TableRightCell")
+        except:
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 그래프 삽입중 오류 발생'
+            print(log_msg)
+            f.write(log_msg + '\n')
+            insert_text('데이터 없음')
+            hwp.HAction.Run("TableRightCell")
 
 
 insert_daq_pic1(hwp, br_name)
-insert_daq_pic1(hwp, br_name)
+insert_daq_pic2(hwp, br_name)
 insert_v3_pic(hwp, br_name)
 insert_eqk_pic(hwp, br_name)
 insert_res_speed_pic(hwp, br_name)
 insert_vol_afford_pic(hwp, br_name)
 
+# 월간모니터링 결과 총괄  + 교량별 정상이상 수량 집계
+hwp.PutFieldText('기준수량', len(channel_names))
+hwp.PutFieldText('정상수량', len(channel_names)-abnormal_count)
+hwp.PutFieldText('비정상수량', abnormal_count)
+hwp.PutFieldText('전달대비변동', '-')
+
 hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/통계데이터(25년 01~04월)/{br_name}/{br_name}_월간모니터링보고서(5월).hwp')
-hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/통계데이터(25년 01~04월)/{br_name}/{br_name}_월간모니터링보고서(5월).pdf',1)
-
-"""
-그래프를 넣는 표를 삽입할 예정(1x1)
-
-표머리도 없이 그래프 하나 넣어놓고, 첫번째 셀에 캐럿을 넣을 예정
-
-(채널 수-1)만큼 표길이 추가하고,
-
-별도의 꾸밈없이 그래프 추가예정
-
-한글문서 교량 폴더에 저장하고, pdf로도 저장하기
-
-hwp.Quit()
-"""
