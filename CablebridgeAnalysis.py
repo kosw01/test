@@ -436,7 +436,7 @@ class BridgeAnalysis:
                                 <div class="progress-bar">
                                     <span class="progress-bar-fill" style="width: {reception_rate}%"></span>
                                 </div>
-                                {reception_rate:.1f}%
+                                {actual_records}/{total_expected_records} ({reception_rate:.1f}%)
                             </td>
                         </tr>
                 """
@@ -481,6 +481,81 @@ class BridgeAnalysis:
                             <td>{plot_data[avg_col].mean():.{significant_figure}f}</td>
                             <td>{plot_data[avg_col].max():.{significant_figure}f}</td>
                             <td>{plot_data[avg_col].max() - plot_data[avg_col].min():.{significant_figure}f}</td>
+                        </tr>
+                    """
+
+        html_content += """
+                    </table>
+                </div>
+
+                <!-- 5. 관리기준 초과 여부 -->
+                <div class="section">
+                    <div class="section-title">5. 관리기준 초과 여부</div>
+                    <table>
+                        <tr>
+                            <th>센서명</th>
+                            <th>최댓값</th>
+                            <th>최솟값</th>
+                            <th>관리상한</th>
+                            <th>관리하한</th>
+                            <th>초과여부</th>
+                            <th>비고</th>
+                        </tr>
+        """
+
+        # 관리기준 초과 여부 분석
+        for col in channel_names:
+            avg_col = f"{col}_AVG"
+            if avg_col in data.columns:
+                channel_info = filtered_info[filtered_info['channel_name'] == col].iloc[0]
+                limit_type = channel_info['limit_type']
+                plot_data = data[['계측시간', avg_col]].dropna()
+                
+                if not plot_data.empty:
+                    max_value = plot_data[avg_col].max()
+                    min_value = plot_data[avg_col].min()
+                    significant_figure = channel_info['significant_figure']
+                    
+                    # limit_type에 따른 관리기준 설정
+                    if limit_type == 2:
+                        up_limit = channel_info.get('up_limit2')  # 관리상한
+                        low_limit = None  # 하한 없음
+                    elif limit_type == 4:
+                        up_limit = channel_info.get('up_limit2')  # 관리상한
+                        low_limit = channel_info.get('low_limit2')  # 관리하한
+                    else:  # limit_type이 0 또는 6인 경우
+                        up_limit = None
+                        low_limit = None
+                    
+                    # 초과 여부 확인
+                    is_exceeded = False
+                    note = ""
+                    
+                    if limit_type in [2, 4]:
+                        if up_limit is not None and max_value > up_limit:
+                            is_exceeded = True
+                            note += f"최댓값이 관리상한({up_limit}) 초과"
+                        
+                        if low_limit is not None and min_value < low_limit:
+                            is_exceeded = True
+                            if note:
+                                note += "<br>"
+                            note += f"최솟값이 관리하한({low_limit}) 미만"
+                    else:  # limit_type이 0 또는 6인 경우
+                        note = "관리기준 없음"
+                    
+                    # HTML 스타일 설정
+                    style = 'color: red;' if is_exceeded else ''
+                    
+                    html_content += f"""
+                        <tr style="{style}">
+                            <td>{col}</td>
+                            <td>{max_value:.{significant_figure}f}</td>
+                            <td>{min_value:.{significant_figure}f}</td>
+                            <td>{up_limit if up_limit is not None else "-"}</td>
+                            <td>{low_limit if low_limit is not None else "-"}</td>
+                            <td>{"초과" if is_exceeded else "정상"}</td>
+                            <td>{note}</td>
                         </tr>
                     """
 
@@ -793,10 +868,11 @@ class BridgeAnalysis:
 
         row_idx = 3
         for channel in sensor_info['channel_name']:
-            if channel in self.data_merge.columns:
+            avg_col = f"{channel}_AVG"
+            if avg_col in self.data_merge.columns:
                 channel_info = sensor_info[sensor_info['channel_name'] == channel].iloc[0]
                 limit_type = channel_info['limit_type']
-                data = self.data_merge[channel].dropna()
+                data = self.data_merge[avg_col].dropna()
                 
                 if len(data) > 0:
                     max_value = data.max()
@@ -807,8 +883,8 @@ class BridgeAnalysis:
                         up_limit = channel_info.get('up_limit2')  # 관리상한
                         low_limit = None  # 하한 없음
                     elif limit_type == 4:
-                        up_limit = channel_info.get('up_limit1')  # 관리상한
-                        low_limit = channel_info.get('low_limit1')  # 관리하한
+                        up_limit = channel_info.get('up_limit2')  # 관리상한
+                        low_limit = channel_info.get('low_limit2')  # 관리하한
                     else:  # limit_type이 0 또는 6인 경우
                         up_limit = None
                         low_limit = None
