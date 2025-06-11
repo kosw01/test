@@ -58,7 +58,7 @@ def insert_eqk_pic(hwp, br_name):
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/행정안전부.jpg'), Embedded=False, sizeoption=3)
 def insert_res_speed_pic(hwp, br_name):
-    hwp.MoveToField(f'응담속도',True,False,False)
+    hwp.MoveToField(f'응답속도',True,False,False)
     hwp.Run("SelectAll")
     hwp.Run("Delete")
     hwp.InsertPicture(os.path.join(pic_path, f'{br_name}/작업관리자.jpg'), Embedded=False, sizeoption=3)  
@@ -83,13 +83,13 @@ hwp = win32.gencache.EnsureDispatch("hwpframe.hwpobject")
 hwp.XHwpWindows.Item(0).Visible = True # 아래한글 첫번째 파일 보이게해줘
 
 # 파일경로 꼭 확인하기(절대경로로 작성)
-hwp.Open(r"C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)\월간모니터링보고서(개별교량).hwp")
+hwp.Open(r"C:\Users\Y15599\Desktop\작업\Cablebridge_project_01\월간모니터링보고서(개별교량).hwp")
 
 # 참조테이블 불러오기
 info = pd.read_csv('01_channel_info/channel_info.csv', encoding='cp949')     # 채널정보
-pic_path = r'C:\Users\Y15599\Desktop\작업\통계데이터(25년 01~04월)'               # 가동율 그래프를 담고있는 폴더의 절대경로
+pic_path = r"C:\Users\Y15599\Desktop\작업\Cablebridge_project_01\2025-05"               # 가동율 그래프를 담고있는 폴더의 절대경로
 
-n = 1 # 보고서 작성할 교량 번호
+n = 7 # 보고서 작성할 교량 번호
 filtered_info = info[info['no.'] == n]
 channel_names = filtered_info['channel_name'].tolist()
 br_name = filtered_info['br_name'].iloc[0]
@@ -143,36 +143,43 @@ for j in range(len(channel_names)):
 # 데이터 수신율 확인
 move_to_start_position(hwp, i)
 abnormal_count = 0
+print(bridge_report.info())
 with open(f'{br_name}/{br_name}_log.txt', 'w', encoding='utf-8') as f:
     for j in range(len(channel_names)):
-        reception_rate = float(bridge_report['Unnamed: 3'].iloc[j+1])
-        if reception_rate <= 20:
-            insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
-            move_to_next_row(hwp, 2)
-            insert_text('O')
-            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+        try:
+            reception_rate = float(bridge_report['Unnamed: 3'].iloc[j])
+            if reception_rate <= 20:
+                insert_text(f'데이터 수신불량 수신율:{reception_rate}%')
+                move_to_next_row(hwp, 2)
+                insert_text('O')
+                log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+                print(log_msg)
+                f.write(log_msg + '\n')
+                move_to_next_row(hwp, 6)   
+                abnormal_count += 1
+            elif reception_rate <= 50:
+                insert_text(F'일부구간 결측 {reception_rate}%')
+                move_to_next_row(hwp, 1)
+                insert_text('O')
+                log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+                print(log_msg)
+                f.write(log_msg + '\n')
+                abnormal_count += 1
+                move_to_next_row(hwp, 7)    
+            elif reception_rate <= 80:
+                insert_text('일부구간 결측')
+                move_to_next_row(hwp, 3)
+                insert_text('O')
+                log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
+                print(log_msg)
+                f.write(log_msg + '\n')
+                move_to_next_row(hwp, 5)  
+            else:
+                move_to_next_row(hwp)
+        except Exception as e:
+            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터 수신율 확인 중 오류 발생: {str(e)}'
             print(log_msg)
             f.write(log_msg + '\n')
-            move_to_next_row(hwp, 6)   
-            abnormal_count += 1
-        elif reception_rate <= 50:
-            insert_text('일부구간 결측')
-            move_to_next_row(hwp, 1)
-            insert_text('O')
-            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
-            print(log_msg)
-            f.write(log_msg + '\n')
-            abnormal_count += 1
-            move_to_next_row(hwp, 7)    
-        elif reception_rate <= 80:
-            insert_text('일부구간 결측')
-            move_to_next_row(hwp, 3)
-            insert_text('O')
-            log_msg = f'{br_name} 채널명 {channel_names[j]}에서 데이터수신율 {reception_rate}%'
-            print(log_msg)
-            f.write(log_msg + '\n')
-            move_to_next_row(hwp, 5)  
-        else:
             move_to_next_row(hwp)
 
     # 관리기준 초과 확인
@@ -204,6 +211,7 @@ with open(f'{br_name}/{br_name}_log.txt', 'w', encoding='utf-8') as f:
             insert_text('데이터 없음')
             hwp.HAction.Run("TableRightCell")
 
+print(f'{abnormal_count}개 채널 일부구간 결측')
 
 insert_daq_pic1(hwp, br_name)
 insert_daq_pic2(hwp, br_name)
@@ -217,5 +225,5 @@ hwp.PutFieldText('기준수량', len(channel_names))
 hwp.PutFieldText('정상수량', len(channel_names)-abnormal_count)
 hwp.PutFieldText('비정상수량', abnormal_count)
 hwp.PutFieldText('전달대비변동', '-')
-
-hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/통계데이터(25년 01~04월)/{br_name}/{br_name}_월간모니터링보고서(5월).hwp')
+hwp.PutFieldText('점검내용 작성', f'{len(channel_names)} 중 {abnormal_count}개 채널 일부구간 결측')
+hwp.SaveAs(f'C:/Users/Y15599/Desktop/작업/Cablebridge_project_01/2025-04/거북선대교/{br_name}_월간모니터링보고서(4월).hwp')
