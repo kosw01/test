@@ -1054,9 +1054,10 @@ class BridgeAnalysis:
             
             # 각 센서별로 주별 수신율 계산
             for channel in channel_names:
-                if channel in self.data_merge.columns:
+                avg_col = f"{channel}_AVG"
+                if avg_col in self.data_merge.columns:
                     # 주별로 그룹화하여 수신율 계산
-                    weekly_data = self.data_merge.groupby(['Year', 'Week'])[channel].agg([
+                    weekly_data = self.data_merge.groupby(['Year', 'Week'])[avg_col].agg([
                         ('received', 'count'),  # 수신된 데이터 수
                         ('total', 'size')      # 전체 데이터 수
                     ])
@@ -1069,7 +1070,9 @@ class BridgeAnalysis:
                         weekly_rates = weekly_data[['reception_rate']].copy()
                         weekly_rates.columns = [channel]
                     else:
-                        weekly_rates[channel] = weekly_data['reception_rate']
+                        # 인덱스가 일치하는지 확인하고 병합
+                        weekly_rates = weekly_rates.join(weekly_data[['reception_rate']], how='outer')
+                        weekly_rates.rename(columns={'reception_rate': channel}, inplace=True)
             
             # 인덱스 리셋하여 Year와 Week를 컬럼으로 변환
             weekly_rates = weekly_rates.reset_index()
