@@ -55,19 +55,30 @@ except Exception as e:
 class BridgeAnalysis:
     def __init__(self, br_name):
         self.br_name = br_name
-        self.info = pd.read_csv(f'01_channel_info/channel_info.csv', encoding='cp949')
-        self.dynamic = pd.read_csv(f'{self.br_name}/{self.br_name}_동적통계데이터.csv', encoding='cp949')
+        # 인코딩 시도 함수
+        def read_csv_with_encoding(file_path):
+            try:
+                return pd.read_csv(file_path, encoding='utf-8')
+            except UnicodeDecodeError:
+                try:
+                    return pd.read_csv(file_path, encoding='cp949')
+                except UnicodeDecodeError:
+                    print(f"파일을 읽을 수 없습니다: {file_path}")
+                    raise
+
+        self.info = read_csv_with_encoding('01_channel_info/channel_info.csv')
+        self.dynamic = read_csv_with_encoding(f'{self.br_name}/{self.br_name}_통계데이터.csv')
         try:
-            self.static = pd.read_csv(f'{self.br_name}/{self.br_name}_정적통계데이터.csv', encoding='cp949')
+            self.static = read_csv_with_encoding(f'{self.br_name}/{self.br_name}_정적통계데이터.csv')
         except FileNotFoundError:
             print(f"{self.br_name}의 정적통계데이터가 없습니다.")
-            self.static = pd.DataFrame(columns=['MeasureDate'])  # 빈 DataFrame 생성
-        self.data_merge = pd.merge(self.dynamic, self.static, on='MeasureDate', how='outer')
+            self.static = pd.DataFrame(columns=['계측시간'])  # 빈 DataFrame 생성
+        self.data_merge = pd.merge(self.dynamic, self.static, on='계측시간', how='outer')
 
         # date 변환을 초기화 단계에서 수행
-        self.dynamic['MeasureDate'] = pd.to_datetime(self.dynamic['MeasureDate'])
-        self.static['MeasureDate'] = pd.to_datetime(self.static['MeasureDate'])
-        self.data_merge['MeasureDate'] = pd.to_datetime(self.data_merge['MeasureDate'])
+        self.dynamic['계측시간'] = pd.to_datetime(self.dynamic['계측시간'])
+        self.static['계측시간'] = pd.to_datetime(self.static['계측시간'])
+        self.data_merge['계측시간'] = pd.to_datetime(self.data_merge['계측시간'])
         print(self.data_merge.info())
 
     def plot_time_history(self):
@@ -85,14 +96,15 @@ class BridgeAnalysis:
         data = self.data_merge
 
         for idx, col in enumerate(channel_names):
-            if col not in data.columns:
-                print(f"{col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
+            avg_col = f"{col}_AVG"
+            if avg_col not in data.columns:
+                print(f"{avg_col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
                 continue
 
             # 날짜와 값이 모두 유효한 데이터만 추출
-            plot_data = data[['MeasureDate', col]].dropna()
+            plot_data = data[['계측시간', avg_col]].dropna()
             if plot_data.empty:
-                print(f"{col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                 continue
 
             # limit_type에 따른 상한선 또는 하한선 가져오기
@@ -129,21 +141,21 @@ class BridgeAnalysis:
             fig, ax = plt.subplots(figsize=(b, h))
 
             if limit_type == 0 or limit_type == 6:  # limit_type 0 시간이력그래프
-                ax.plot(plot_data['MeasureDate'], plot_data[col], label=col, alpha=0.8, color='darkorange')
+                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
 
             elif limit_type == 1:  # limit_type 1: 상한선이 있는 시간이력그래프
                 ax.axhline(y=up_limit1, color='red', linestyle='-', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['MeasureDate'], plot_data[col], label=col, alpha=0.8, color='darkorange')
+                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
 
             elif limit_type == 2:  # limit_type 2: 상한선이 2개 있는 시간이력그래프
                 ax.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
                 ax.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['MeasureDate'], plot_data[col], label=col, alpha=0.8, color='darkorange')
+                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
 
             elif limit_type == 4:  # limit_type 4: 상한선, 하한선이 각 2개 있는 시간이력그래프
                 ax.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
                 ax.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알림상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['MeasureDate'], plot_data[col], label=col, alpha=0.8, color='darkorange')
+                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
                 ax.axhline(y=low_limit1, color='blue', linestyle='--', linewidth=2, label=f'알림하한: {round(low_limit1,significant_figure)}')
                 ax.axhline(y=low_limit2, color='blue', linestyle='-', linewidth=2, label=f'관리하한: {round(low_limit2,significant_figure)}')
             else:
@@ -158,7 +170,7 @@ class BridgeAnalysis:
             # x축 날짜 포맷 설정
             ax.xaxis.set_major_formatter(DateFormatter('%m-%d'))
             #plt.xticks(rotation=45, ha='right')
-            ax.set_xlim(plot_data['MeasureDate'].min(), plot_data['MeasureDate'].max())
+            ax.set_xlim(plot_data['계측시간'].min(), plot_data['계측시간'].max())
             ax.tick_params(axis='both', labelsize=FONT_SIZE_TICK)
             ax.grid(True)
 
@@ -181,17 +193,22 @@ class BridgeAnalysis:
             data = self.data_merge
 
             for idx, col in enumerate(channel_names):
-                if col not in data.columns:
-                    print(f"{col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
+                avg_col = f"{col}_AVG"
+                if avg_col not in data.columns:
+                    print(f"{avg_col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
                     continue
 
                 # limit_type에 따른 상관관계정보 가져오기
-                #channel_info = filtered_info[filtered_info['channel_name'] == col].iloc[0]
                 channel_info1 = filtered_info1[filtered_info1['channel_name'] == col].iloc[0]
                 limit_type = channel_info1['limit_type']
                 b = channel_info1.get('b')
                 h = channel_info1.get('h')
                 correl = channel_info1['correl']
+                avg_correl = f"{correl}_AVG"
+
+                if avg_correl not in data.columns:
+                    print(f"{avg_correl} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
+                    continue
 
                 # ylabel 구성: 채널종류 + (단위)
                 ylabel = f"{channel_info1['채널종류']} ({channel_info1['unit']})"
@@ -211,14 +228,14 @@ class BridgeAnalysis:
                     fig, ax = plt.subplots(figsize=(b, h))
 
                     # NaN 제거
-                    valid_data = self.data_merge[[col, correl]].dropna()
+                    valid_data = self.data_merge[[avg_col, avg_correl]].dropna()
 
                     if valid_data.empty:
-                        print(f"데이터가 부족하여 {col} 산점도를 생성할 수 없습니다.")
+                        print(f"데이터가 부족하여 {avg_col} 산점도를 생성할 수 없습니다.")
                         continue
 
-                    x_data = valid_data[correl]
-                    y_data = valid_data[col]
+                    x_data = valid_data[avg_correl]
+                    y_data = valid_data[avg_col]
 
                     ax.scatter(x_data, y_data)
 
@@ -265,80 +282,18 @@ class BridgeAnalysis:
                     pass
 
     def generate_summary_report(self):
-        """교량 계측 데이터 요약 보고서를 HTML 형식으로 생성하는 함수"""
-        
-        # 1. 데이터 수집 정보
-        start_date = self.data_merge['MeasureDate'].min()
-        end_date = self.data_merge['MeasureDate'].max()
-        sampling_period = pd.Timedelta(self.data_merge['MeasureDate'].diff().mode().iloc[0]).total_seconds() / 60  # 분 단위로 변환
-        
-        # 2. 계측기 종류 및 수량
-        sensor_info = self.info[self.info['br_name'] == self.br_name]
-        sensor_counts = sensor_info['센서종류'].value_counts()
-        
-        # 3. 센서별 데이터 수신율 계산 및 연속 결측 기간 확인
-        total_expected_records = len(pd.date_range(start=start_date, end=end_date, freq=f'{sampling_period}min'))
-        reception_rates = {}
-        missing_periods = {}  # 연속 결측 기간을 저장할 딕셔너리
-        
-        for col in sensor_info['channel_name']:
-            if col in self.data_merge.columns:
-                # 데이터 수신율 계산
-                actual_records = self.data_merge[col].count()
-                total_missing = total_expected_records - actual_records
-                reception_rates[col] = {
-                    'actual': actual_records,
-                    'total': total_expected_records,
-                    'rate': (actual_records / total_expected_records) * 100,
-                    'missing': total_missing
-                }
-                
-                # 연속 결측 기간 확인
-                missing_data = self.data_merge[col].isna()
-                missing_periods[col] = []
-                
-                if missing_data.any():
-                    # 결측(True)인 구간만 연속 그룹핑
-                    group_id = (missing_data != missing_data.shift()).cumsum()
-                    true_groups = group_id[missing_data]
-                    for gid in true_groups.unique():
-                        group_idx = (group_id == gid) & missing_data
-                        group_data = self.data_merge[group_idx]
-                        if len(group_data) >= 60:  # 60개 이상 연속된 결측
-                            start_time = group_data['MeasureDate'].min()
-                            end_time = group_data['MeasureDate'].max()
-                            missing_periods[col].append({
-                                'start': start_time,
-                                'end': end_time,
-                                'duration': len(group_data)
-                            })
-        
-        # 4. 이상치 확인 및 통계 정보
-        outliers_summary = {}
-        stats_summary = {}
-        for col in sensor_info['channel_name']:
-            if col in self.data_merge.columns:
-                data = self.data_merge[col].dropna()
-                if len(data) > 0:
-                    Q1 = data.quantile(0.25)
-                    Q3 = data.quantile(0.75)
-                    IQR = Q3 - Q1
-                    outliers = data[(data < (Q1 - 1.5 * IQR)) | (data > (Q3 + 1.5 * IQR))]
-                    outliers_summary[col] = len(outliers)
-                    
-                    # significant_figure 가져오기
-                    significant_figure = sensor_info[sensor_info['channel_name'] == col]['significant_figure'].iloc[0]
-                    
-                    # 통계 정보 계산
-                    stats_summary[col] = {
-                        'min': data.min(),
-                        'mean': data.mean(),
-                        'max': data.max(),
-                        'range': data.max() - data.min(),
-                        'significant_figure': significant_figure
-                    }
+        """월간 요약 보고서를 생성하는 함수"""
+        # info.csv에서 현재 교량(br_name)의 limit_type에 해당하는 channel_name 필터링
+        filtered_info = self.info[self.info['br_name'] == self.br_name]
+        channel_names = filtered_info['channel_name'].tolist()
 
-        # HTML 템플릿 생성
+        if not channel_names:
+            print(f"br_name에 해당하는 채널이 없습니다: {self.br_name}")
+            return
+
+        data = self.data_merge
+
+        # HTML 보고서 시작
         html_content = f"""
         <!DOCTYPE html>
         <html lang="ko">
@@ -417,15 +372,15 @@ class BridgeAnalysis:
                         </tr>
                         <tr>
                             <td>데이터 수집 기간</td>
-                            <td>{start_date.strftime("%Y-%m-%d")} ~ {end_date.strftime("%Y-%m-%d")}</td>
+                            <td>{data['계측시간'].min().strftime('%Y-%m-%d')} ~ {data['계측시간'].max().strftime('%Y-%m-%d')}</td>
                         </tr>
                         <tr>
                             <td>수집 주기</td>
-                            <td>{sampling_period:.0f}분</td>
+                            <td>{pd.Timedelta(data['계측시간'].diff().mode().iloc[0]).total_seconds() / 60:.0f}분</td>
                         </tr>
                         <tr>
                             <td>센서 종류</td>
-                            <td>{", ".join(sensor_info["센서종류"].unique())}</td>
+                            <td>{", ".join(filtered_info['센서종류'].unique())}</td>
                         </tr>
                     </table>
                 </div>
@@ -438,7 +393,15 @@ class BridgeAnalysis:
                             <th>센서 종류</th>
                             <th>수량</th>
                         </tr>
-                        {"".join(f"<tr><td>{sensor_type}</td><td>{count}</td></tr>" for sensor_type, count in sensor_counts.items())}
+        """
+
+        # 센서 종류별 수량 계산
+        sensor_counts = filtered_info['센서종류'].value_counts()
+        for sensor_type, count in sensor_counts.items():
+            html_content += f"<tr><td>{sensor_type}</td><td>{count}</td></tr>"
+        
+        # 합계 행 추가
+        html_content += f"""
                         <tr style="font-weight: bold;">
                             <td>합계</td>
                             <td>{sensor_counts.sum()}</td>
@@ -454,17 +417,31 @@ class BridgeAnalysis:
                             <th>센서명</th>
                             <th>수신율</th>
                         </tr>
-                        {"".join(f'''
+        """
+
+        # 데이터 수신율 계산
+        total_expected_records = len(pd.date_range(start=data['계측시간'].min(), 
+                                                 end=data['계측시간'].max(), 
+                                                 freq=f"{pd.Timedelta(data['계측시간'].diff().mode().iloc[0]).total_seconds() / 60:.0f}min"))
+        
+        for col in channel_names:
+            avg_col = f"{col}_AVG"
+            if avg_col in data.columns:
+                actual_records = data[avg_col].count()
+                reception_rate = (actual_records / total_expected_records) * 100
+                html_content += f"""
                         <tr>
-                            <td>{channel}</td>
+                            <td>{col}</td>
                             <td>
                                 <div class="progress-bar">
-                                    <span class="progress-bar-fill" style="width: {rate['rate']:.1f}%"></span>
+                                    <span class="progress-bar-fill" style="width: {reception_rate}%"></span>
                                 </div>
-                                {rate['actual']}/{rate['total']} ({rate['rate']:.1f}%)
+                                {reception_rate:.1f}%
                             </td>
                         </tr>
-                        ''' for channel, rate in reception_rates.items())}
+                """
+
+        html_content += """
                     </table>
                 </div>
 
@@ -480,16 +457,34 @@ class BridgeAnalysis:
                             <th>최댓값</th>
                             <th>범위(최대-최소)</th>
                         </tr>
-                        {"".join(f'''
+        """
+
+        # 이상치 분석
+        for col in channel_names:
+            avg_col = f"{col}_AVG"
+            if avg_col in data.columns:
+                plot_data = data[['계측시간', avg_col]].dropna()
+                if not plot_data.empty:
+                    Q1 = plot_data[avg_col].quantile(0.25)
+                    Q3 = plot_data[avg_col].quantile(0.75)
+                    IQR = Q3 - Q1
+                    outliers = plot_data[avg_col][(plot_data[avg_col] < (Q1 - 1.5 * IQR)) | (plot_data[avg_col] > (Q3 + 1.5 * IQR))]
+                    
+                    # significant_figure 가져오기
+                    significant_figure = filtered_info[filtered_info['channel_name'] == col]['significant_figure'].iloc[0]
+                    
+                    html_content += f"""
                         <tr>
-                            <td>{channel}</td>
-                            <td>{count}</td>
-                            <td>{stats_summary[channel]['min']:.{stats_summary[channel]['significant_figure']}f}</td>
-                            <td>{stats_summary[channel]['mean']:.{stats_summary[channel]['significant_figure']}f}</td>
-                            <td>{stats_summary[channel]['max']:.{stats_summary[channel]['significant_figure']}f}</td>
-                            <td>{stats_summary[channel]['range']:.{stats_summary[channel]['significant_figure']}f}</td>
+                            <td>{col}</td>
+                            <td>{len(outliers)}</td>
+                            <td>{plot_data[avg_col].min():.{significant_figure}f}</td>
+                            <td>{plot_data[avg_col].mean():.{significant_figure}f}</td>
+                            <td>{plot_data[avg_col].max():.{significant_figure}f}</td>
+                            <td>{plot_data[avg_col].max() - plot_data[avg_col].min():.{significant_figure}f}</td>
                         </tr>
-                        ''' for channel, count in outliers_summary.items())}
+                    """
+
+        html_content += """
                     </table>
                 </div>
             </div>
@@ -498,19 +493,78 @@ class BridgeAnalysis:
         """
 
         # HTML 파일 저장
-        os.makedirs(self.br_name, exist_ok=True)
-        with open(f'{self.br_name}/{self.br_name}_요약보고서.html', 'w', encoding='utf-8') as f:
+        output_dir = f'{self.br_name}'
+        os.makedirs(output_dir, exist_ok=True)
+        with open(f'{output_dir}/{self.br_name}_요약보고서.html', 'w', encoding='utf-8') as f:
             f.write(html_content)
-        
-        print(f'{self.br_name} 요약 보고서가 HTML 형식으로 생성되었습니다.')
+
+        # 통계 출력
+        for idx, col in enumerate(channel_names):
+            avg_col = f"{col}_AVG"
+            if avg_col not in data.columns:
+                print(f"{avg_col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
+                continue
+
+            # limit_type에 따른 상한선 또는 하한선 가져오기
+            channel_info = filtered_info[filtered_info['channel_name'] == col].iloc[0]
+            limit_type = channel_info['limit_type']
+            up_limit1 = channel_info.get('up_limit1', None)
+            up_limit2 = channel_info.get('up_limit2', None)
+            low_limit2 = channel_info.get('low_limit2', None)
+            low_limit1 = channel_info.get('low_limit1', None)
+            limit1 = channel_info.get('limit1', None)
+            limit2 = channel_info.get('limit2', None)
+            limit3 = channel_info.get('limit3', None)
+            limit4 = channel_info.get('limit4', None)
+            significant_figure = channel_info.get('significant_figure', None)
+
+            # 날짜와 값이 모두 유효한 데이터만 추출
+            plot_data = data[['계측시간', avg_col]].dropna()
+            if plot_data.empty:
+                print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                continue
+
+            # 통계 계산
+            mean_value = plot_data[avg_col].mean()
+            std_value = plot_data[avg_col].std()
+            max_value = plot_data[avg_col].max()
+            min_value = plot_data[avg_col].min()
+
+            # limit_type에 따른 알람 체크
+            if limit_type == 1:  # limit_type 1: 상한선이 있는 시간이력그래프
+                if max_value > up_limit1:
+                    print(f"{col} 알람상한 초과: {max_value:.{significant_figure}f} > {up_limit1:.{significant_figure}f}")
+
+            elif limit_type == 2:  # limit_type 2: 상한선이 2개 있는 시간이력그래프
+                if max_value > up_limit2:
+                    print(f"{col} 관리상한 초과: {max_value:.{significant_figure}f} > {up_limit2:.{significant_figure}f}")
+                elif max_value > up_limit1:
+                    print(f"{col} 알람상한 초과: {max_value:.{significant_figure}f} > {up_limit1:.{significant_figure}f}")
+
+            elif limit_type == 4:  # limit_type 4: 상한선, 하한선이 각 2개 있는 시간이력그래프
+                if max_value > up_limit2:
+                    print(f"{col} 관리상한 초과: {max_value:.{significant_figure}f} > {up_limit2:.{significant_figure}f}")
+                elif max_value > up_limit1:
+                    print(f"{col} 알림상한 초과: {max_value:.{significant_figure}f} > {up_limit1:.{significant_figure}f}")
+                if min_value < low_limit2:
+                    print(f"{col} 관리하한 초과: {min_value:.{significant_figure}f} < {low_limit2:.{significant_figure}f}")
+                elif min_value < low_limit1:
+                    print(f"{col} 알림하한 초과: {min_value:.{significant_figure}f} < {low_limit1:.{significant_figure}f}")
+
+            # 통계 출력
+            print(f"\n{col} 통계:")
+            print(f"평균: {mean_value:.{significant_figure}f}")
+            print(f"표준편차: {std_value:.{significant_figure}f}")
+            print(f"최대값: {max_value:.{significant_figure}f}")
+            print(f"최소값: {min_value:.{significant_figure}f}")
 
     def generate_summary_report_excel(self):
         """교량 계측 데이터 요약 보고서를 Excel 형식으로 생성하는 함수"""
         
         # 1. 데이터 수집 정보
-        start_date = self.data_merge['MeasureDate'].min()
-        end_date = self.data_merge['MeasureDate'].max()
-        sampling_period = pd.Timedelta(self.data_merge['MeasureDate'].diff().mode().iloc[0]).total_seconds() / 60  # 분 단위로 변환
+        start_date = self.data_merge['계측시간'].min()
+        end_date = self.data_merge['계측시간'].max()
+        sampling_period = pd.Timedelta(self.data_merge['계측시간'].diff().mode().iloc[0]).total_seconds() / 60  # 분 단위로 변환
         
         # 2. 계측기 종류 및 수량
         sensor_info = self.info[self.info['br_name'] == self.br_name]
@@ -522,9 +576,10 @@ class BridgeAnalysis:
         missing_periods = {}  # 연속 결측 기간을 저장할 딕셔너리
         
         for col in sensor_info['channel_name']:
-            if col in self.data_merge.columns:
+            avg_col = f"{col}_AVG"
+            if avg_col in self.data_merge.columns:
                 # 데이터 수신율 계산
-                actual_records = self.data_merge[col].count()
+                actual_records = self.data_merge[avg_col].count()
                 total_missing = total_expected_records - actual_records
                 reception_rates[col] = {
                     'actual': actual_records,
@@ -534,7 +589,7 @@ class BridgeAnalysis:
                 }
                 
                 # 연속 결측 기간 확인
-                missing_data = self.data_merge[col].isna()
+                missing_data = self.data_merge[avg_col].isna()
                 missing_periods[col] = []
                 
                 if missing_data.any():
@@ -545,8 +600,8 @@ class BridgeAnalysis:
                         group_idx = (group_id == gid) & missing_data
                         group_data = self.data_merge[group_idx]
                         if len(group_data) >= 60:  # 60개 이상 연속된 결측
-                            start_time = group_data['MeasureDate'].min()
-                            end_time = group_data['MeasureDate'].max()
+                            start_time = group_data['계측시간'].min()
+                            end_time = group_data['계측시간'].max()
                             missing_periods[col].append({
                                 'start': start_time,
                                 'end': end_time,
@@ -557,8 +612,9 @@ class BridgeAnalysis:
         outliers_summary = {}
         stats_summary = {}
         for col in sensor_info['channel_name']:
-            if col in self.data_merge.columns:
-                data = self.data_merge[col].dropna()
+            avg_col = f"{col}_AVG"
+            if avg_col in self.data_merge.columns:
+                data = self.data_merge[avg_col].dropna()
                 if len(data) > 0:
                     Q1 = data.quantile(0.25)
                     Q3 = data.quantile(0.75)
@@ -910,8 +966,8 @@ class BridgeAnalysis:
         """주별 데이터 수신율을 계산하는 함수"""
         try:
             # 주별로 그룹화하기 위해 날짜를 주 단위로 변환
-            self.data_merge['Week'] = self.data_merge['MeasureDate'].dt.isocalendar().week
-            self.data_merge['Year'] = self.data_merge['MeasureDate'].dt.isocalendar().year
+            self.data_merge['Week'] = self.data_merge['계측시간'].dt.isocalendar().week
+            self.data_merge['Year'] = self.data_merge['계측시간'].dt.isocalendar().year
             
             # 센서 정보 가져오기
             sensor_info = self.info[self.info['br_name'] == self.br_name]
