@@ -128,6 +128,7 @@ class BridgeAnalysis:
             bbox_y = channel_info.get('bbox_y', None)
             eqk1 = channel_info.get('eqk1', None)
             eqk2 = channel_info.get('eqk2', None)
+            outlier_param = 1.5
 
             # ylabel 구성: 채널종류 + (단위)
             ylabel = f"{channel_info['채널종류']} ({channel_info['unit']})"
@@ -139,72 +140,158 @@ class BridgeAnalysis:
                     return f'{value:,.{significant_figure}f}'
 
             # 그래프 생성
-            fig, ax = plt.subplots(figsize=(b, h))
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(b, h))
 
-            if limit_type == 0 or limit_type == 6:  # limit_type 0 시간이력그래프
-                plot_data = data[['계측시간', avg_col]].dropna()
+            window_size = 1000
+            step = 50
+            confidence_level = 0.95  # 99% 신뢰구간
+            z = stats.norm.ppf(1 - (1 - confidence_level) / 2)
+
+            plot_data = data[['계측시간', avg_col]].dropna().copy().reset_index(drop=True)
+
+            means = []
+            stds = []
+            center_indices = []
+
+            for start in range(0, len(plot_data) - window_size + 1, step):
+                window = plot_data[avg_col].iloc[start : start + window_size]
+                means.append(window.mean())
+                stds.append(window.std())
+                center_indices.append(start + window_size // 2)
+
+            means = np.array(means)
+            stds = np.array(stds)
+            center_indices = np.array(center_indices)
+
+            lower_bound = means - z * stds
+            upper_bound = means + z * stds
+
+            # 이상치 판정을 위해 원본 데이터 길이만큼 NaN 배열 생성
+            is_outlier = pd.Series(False, index=plot_data.index)
+
+            # 각 윈도우 구간 내에서 신뢰구간 밖인 값들을 이상치로 표시
+            for i, center in enumerate(center_indices):
+                start = center - window_size // 2
+                end = center + window_size // 2
+                # 범위 벗어날 때 보정
+                if start < 0:
+                    start = 0
+                if end > len(plot_data):
+                    end = len(plot_data)
+
+                window_vals = plot_data[avg_col].iloc[start:end]
+                mask = (window_vals < lower_bound[i]) | (window_vals > upper_bound[i])
+                is_outlier.iloc[start:end] = is_outlier.iloc[start:end] | mask.values
+
+            plot_data_filtered = plot_data[~is_outlier]
+
+
+            if limit_type == 0 or limit_type == 6:  # limit_type 0, 6 시간이력그래프
                 if plot_data.empty:
                     print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                     continue
-                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
+                if plot_data_filtered.empty:
+                    print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                ax1.plot(plot_data['계측시간'], plot_data[avg_col], label='Outlier', alpha=0.8, color='red')
+                ax1.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], alpha=0.8, color='orange')
+                ax2.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], label='Filtered', alpha=0.8, color='darkorange')
+                # ax1.set_ylabel(ylabel, fontsize=FONT_SIZE_LABEL)
+                # ax2.set_ylabel(ylabel, fontsize=FONT_SIZE_LABEL)
+                # ax1.set_title(f'{self.br_name} {col} (W/O Filter)', fontsize=FONT_SIZE_TITLE)
+                # ax2.set_title(f'{self.br_name} {col} (Filtered)', fontsize=FONT_SIZE_TITLE)
 
             elif limit_type == 1:  # limit_type 1: 상한선이 있는 시간이력그래프
-                plot_data = data[['계측시간', avg_col]].dropna()
                 if plot_data.empty:
                     print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                     continue
-                ax.axhline(y=up_limit1, color='red', linestyle='-', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
+                if plot_data_filtered.empty:
+                    print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                ax1.axhline(y=up_limit1, color='red', linestyle='-', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data['계측시간'], plot_data[avg_col], label='Outlier', alpha=0.8, color='red')
+                ax2.axhline(y=up_limit1, color='red', linestyle='-', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], alpha=0.8, color='orange')
+                ax2.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], label='Filtered', alpha=0.8, color='darkorange')
 
             elif limit_type == 2:  # limit_type 2: 상한선이 2개 있는 시간이력그래프
-                plot_data = data[['계측시간', avg_col]].dropna()
                 if plot_data.empty:
                     print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                     continue
-                ax.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
-                ax.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
+                if plot_data_filtered.empty:
+                    print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                ax1.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
+                ax1.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data['계측시간'], plot_data[avg_col], label='Outlier', alpha=0.8, color='red')
+                ax2.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
+                ax2.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], alpha=0.8, color='orange')
+                ax2.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], label='Filtered', alpha=0.8, color='darkorange')
 
             elif limit_type == 4:  # limit_type 4: 상한선, 하한선이 각 2개 있는 시간이력그래프
-                plot_data = data[['계측시간', avg_col]].dropna()
                 if plot_data.empty:
                     print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                     continue
-                ax.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
-                ax.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알림상한: {round(up_limit1,significant_figure)}')
-                ax.plot(plot_data['계측시간'], plot_data[avg_col], label=col, alpha=0.8, color='darkorange')
-                ax.axhline(y=low_limit1, color='blue', linestyle='--', linewidth=2, label=f'알림하한: {round(low_limit1,significant_figure)}')
-                ax.axhline(y=low_limit2, color='blue', linestyle='-', linewidth=2, label=f'관리하한: {round(low_limit2,significant_figure)}')
-
-            elif limit_type == 5:  # limit_type 5: 상한선 1개 있는 시간이력 표준편차그래프
-                sdt_col = f"{col}_STD"
-                if sdt_col not in data.columns:
-                    print(f"{sdt_col} 컬럼이 올해 데이터에 없습니다. 스킵합니다.")
+                if plot_data_filtered.empty:
+                    print(f"{avg_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
                     continue
+                ax1.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
+                ax1.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알림상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data['계측시간'], plot_data[avg_col], label='Outlier', alpha=0.8, color='red')
+                ax1.axhline(y=low_limit1, color='blue', linestyle='--', linewidth=2, label=f'알림하한: {round(low_limit1,significant_figure)}')
+                ax1.axhline(y=low_limit2, color='blue', linestyle='-', linewidth=2, label=f'관리하한: {round(low_limit2,significant_figure)}')
                 
-                plot_data = data[['계측시간', sdt_col]].dropna()
-                if plot_data.empty:
-                    print(f"{sdt_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
-                    continue
-                    
-                '''ax.axhline(y=50, color='red', linestyle='--', linewidth=2, label=f'알림상한: 50 gal')'''
-                ax.plot(plot_data['계측시간'], plot_data[sdt_col], label=col, alpha=0.8, color='darkorange')
+                ax2.axhline(y=up_limit2, color='red', linestyle='-', linewidth=2, label=f'관리상한: {round(up_limit2,significant_figure)}')
+                ax2.axhline(y=up_limit1, color='red', linestyle='--', linewidth=2, label=f'알람상한: {round(up_limit1,significant_figure)}')
+                ax1.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], alpha=0.8, color='orange')
+                ax2.plot(plot_data_filtered['계측시간'], plot_data_filtered[avg_col], label='Filtered', alpha=0.8, color='darkorange')
+                ax2.axhline(y=low_limit1, color='blue', linestyle='--', linewidth=2, label=f'알림하한: {round(low_limit1,significant_figure)}')
+                ax2.axhline(y=low_limit2, color='blue', linestyle='-', linewidth=2, label=f'관리하한: {round(low_limit2,significant_figure)}')
+                
 
+            elif limit_type == 5:  # limit_type 5: 표준편차 시간이력그래프  
+                std_col = f"{col}_STD"
+                plot_data = data[['계측시간', std_col]].dropna()
+                if plot_data.empty:
+                    print(f"{std_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                Q1 = plot_data[std_col].quantile(0.25)
+                Q3 = plot_data[std_col].quantile(0.75)
+                IQR = Q3 - Q1
+                upper_bound = Q3 + outlier_param * IQR
+                plot_data_filtered = plot_data[plot_data[std_col] <= upper_bound]
+                if plot_data.empty:
+                    print(f"{std_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                if plot_data_filtered.empty:
+                    print(f"{std_col} 컬럼에 유효한 데이터가 없습니다. 스킵합니다.")
+                    continue
+                ax1.plot(plot_data['계측시간'], plot_data[std_col], label='Outlier', alpha=0.8, color='red')
+                ax1.plot(plot_data_filtered['계측시간'], plot_data_filtered[std_col], alpha=0.8, color='orange')
+                ax2.plot(plot_data_filtered['계측시간'], plot_data_filtered[std_col], label='Filtered', alpha=0.8, color='darkorange')
             else:
                 pass
 
             # 그래프 설정
-            ax.set_ylabel(ylabel, fontsize=FONT_SIZE_LABEL)
-            ax.set_title(f'{self.br_name} {col}', fontsize=FONT_SIZE_TITLE)
-            ax.legend(loc=legendloc, bbox_to_anchor=(bbox_x, bbox_y), prop=font_prop, fontsize=FONT_SIZE_LEGEND, ncol=5)
-            ax.yaxis.set_major_formatter(FuncFormatter(format_y_ticks))
+            ax1.set_ylabel(ylabel, fontsize=FONT_SIZE_LABEL)
+            ax2.set_ylabel(ylabel, fontsize=FONT_SIZE_LABEL)
+            ax1.set_title(f'{self.br_name} {col}', fontsize=FONT_SIZE_TITLE)
+            # ax2.set_title(f'{self.br_name} {col} (Filtered)', fontsize=FONT_SIZE_TITLE)
+            ax1.legend(loc=legendloc, bbox_to_anchor=(bbox_x, bbox_y), prop=font_prop, fontsize=FONT_SIZE_LEGEND, ncol=5)
+            ax2.legend(loc=legendloc, bbox_to_anchor=(bbox_x, bbox_y), prop=font_prop, fontsize=FONT_SIZE_LEGEND, ncol=5)
+            ax1.yaxis.set_major_formatter(FuncFormatter(format_y_ticks))
+            ax2.yaxis.set_major_formatter(FuncFormatter(format_y_ticks))
             
             # x축 날짜 포맷 설정
-            ax.xaxis.set_major_formatter(DateFormatter('%m-%d'))
-            #plt.xticks(rotation=45, ha='right')
-            ax.set_xlim(plot_data['계측시간'].min(), plot_data['계측시간'].max())
-            ax.tick_params(axis='both', labelsize=FONT_SIZE_TICK)
-            ax.grid(True)
+            ax1.xaxis.set_major_formatter(DateFormatter('%m-%d'))
+            ax2.xaxis.set_major_formatter(DateFormatter('%m-%d'))
+            ax1.set_xlim(plot_data['계측시간'].min(), plot_data['계측시간'].max())
+            ax2.set_xlim(plot_data['계측시간'].min(), plot_data['계측시간'].max())
+            ax1.tick_params(axis='both', labelsize=FONT_SIZE_TICK)
+            ax2.tick_params(axis='both', labelsize=FONT_SIZE_TICK)
+            ax1.grid(True)
+            ax2.grid(True)
 
             # 그래프 저장
             plt.savefig(f'{self.br_name}/{col}.png', dpi=300, bbox_inches='tight') 
